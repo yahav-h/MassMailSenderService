@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <title>Mass Mail Sender</title>
+        <style>
+            div > span {
+                margin-left: 5px;
+                padding: 5px;
+            }
+            div > input {
+                margin-left: 5px;
+                padding: 5px;
+            }
+        </style>
+    </head>
+    <body style="background: azure;">
+        <div class="cont-wrapper" style="margin-top: 8%; border: 2px solid black">
+            <center class="cont-center" style="margin: 8em;">
+                <div>
+                    <span>Target Email: </span><input type="text" id="target-inbox" placeholder="alias@domain.xyz"/>
+                </div>
+                <br/>
+                <div>
+                    <span>Subject: </span><input type="text" id="subject" placeholder="my mail subject" />
+                </div>
+                <br/>
+                <div>
+                    <span>Batch Size: </span><input type="text" id="batch-size" placeholder="how many emails should we send?"/>
+                </div>
+                <br/>
+                <div>
+                    <span>Attachments: </span><input type="file" id="attachments" />
+                </div>
+                <br/>
+                <button type="submit" id="send-btn">SEND NOW!</button>
+            </center>
+        </div>
+    <script>
+        (function () {
+            var submit = document.getElementById("send-btn");
+
+            submit.addEventListener('click', () => {
+                var targetInbox = document.getElementById("target-inbox").value;
+                var file = document.getElementById("attachments").files[0];
+                var threadSubject = document.getElementById("subject").value;
+                var batchSize = document.getElementById("batch-size").value;
+
+                let xhr = new XMLHttpRequest()
+                let formData = new FormData();
+                formData.append("X-TARGET-INBOX", targetInbox)
+                formData.append("X-FILE", file)
+                formData.append("X-THREAD-SUBJECT", threadSubject)
+                formData.append("X-BATCH-SIZE", batchSize)
+                xhr.open("post", "http://127.0.0.1:6061/api/sendmail")
+                xhr.send(formData)
+            });
+        })();
+    </script>
+    </body>
+</html>

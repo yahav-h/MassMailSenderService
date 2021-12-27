@@ -1,0 +1,21 @@
+Reply-To: noreply@mms.automations-services.avanan.net
+From: MMS Automations Services <noreply@mms.automations-services.avanan.net>
+To: {{to}}
+Subject: {{subject}}
+Message-ID: {{message_id}}
+Mime-Version: 1.0
+Content-Type: multipart/mixed; boundary="19032019ABCDE"
+
+--19032019ABCDE
+Content-Type: text/plain; charset="US-ASCII"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: inline
+
+--19032019ABCDE
+Content-Type: application;
+Content-Transfer-Encoding: base64
+Content-Disposition: attachment; filename="{{filename}}"
+
+{{base64string}}
+
+--19032019ABCDE--
