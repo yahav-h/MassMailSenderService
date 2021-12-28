@@ -37,19 +37,30 @@ async def index(req: Request): return templates.TemplateResponse('index.html', {
 @app.post('/api/sendmail')
 async def sendmail(req: Request):
     form_data = await req.form()
-    task_id = helpers.gen_id()
-    t = threading.Thread(target=helpers.sendmail, args=(form_data, task_id))
-    t.run()
+    if all([v != '' for k, v in form_data._dict.items()]):
+        task_id = helpers.gen_id()
+        t = threading.Thread(target=helpers.sendmail, args=(form_data, task_id))
+        t.run()
+        return JSONResponse(
+            content=jsonable_encoder({
+                "status": "success",
+                "timestamp": helpers.stamp(),
+                "taskId": task_id
+            }),
+            status_code=200,
+            media_type="application/json",
+            headers={"content-type": "application/json"}
+        )
     return JSONResponse(
-        content=jsonable_encoder({
-            "status": "success",
-            "timestamp": helpers.stamp(),
-            "taskId": task_id
-        }),
-        status_code=200,
-        media_type="application/json",
-        headers={"content-type": "application/json"}
-    )
+            content=jsonable_encoder({
+                "status": "fail",
+                "timestamp": helpers.stamp(),
+                "reason": "Missing Parameters!"
+            }),
+            status_code=400,
+            media_type="application/json",
+            headers={"content-type": "application/json"}
+        )
 
 if __name__ == '__main__':
     from uvicorn import run
