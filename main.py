@@ -55,7 +55,7 @@ async def start_task(req: Request):
             content=jsonable_encoder({
                 "status": "success",
                 "timestamp": common.stamp(),
-                "taskId": task_id
+                "taskId": task_id[:10]
             }),
             status_code=200,
             media_type="application/json",
@@ -74,7 +74,6 @@ async def start_task(req: Request):
 
 @app.get('/api/tasks')
 async def get_task(req: Request):
-    """ TODO : Future implementation for getting a task status """
     return JSONResponse(
         content=jsonable_encoder({
             "status": "Not Implemented Yet!",
