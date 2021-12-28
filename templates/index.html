@@ -4,38 +4,38 @@
         <meta charset="UTF-8">
         <title>Mass Mail Sender</title>
         <style>
-            div > span {
-                margin-left: 5px;
-                padding: 5px;
+            body {
+                background: azure;
             }
-            div > input {
-                margin-left: 5px;
-                padding: 5px;
+            label {
+                display: inline-block;
+                float: left;
+                clear: left;
+                width: 10em;
+                text-align: left;
+            }
+            input {
+                display: inline-block;
+                width: 14em;
+                float: left;
+            }
+            button {
+                margin-left: 12em;
+                width: 14.5em;
+                height: 3em;
             }
         </style>
     </head>
-    <body style="background: azure;">
-        <div class="cont-wrapper" style="margin-top: 8%; border: 2px solid black">
-            <center class="cont-center" style="margin: 8em;">
-                <div>
-                    <span>Target Email: </span><input type="text" id="target-inbox" placeholder="alias@domain.xyz"/>
-                </div>
-                <br/>
-                <div>
-                    <span>Subject: </span><input type="text" id="subject" placeholder="my mail subject" />
-                </div>
-                <br/>
-                <div>
-                    <span>Batch Size: </span><input type="text" id="batch-size" placeholder="how many emails should we send?"/>
-                </div>
-                <br/>
-                <div>
-                    <span>Attachments: </span><input type="file" id="attachments" />
-                </div>
-                <br/>
-                <button type="submit" id="send-btn">SEND NOW!</button>
-            </center>
-        </div>
+    <body>
+            <h2>Mass Email Sender Service</h2>
+            <div>
+                <label>Email Address: </label><input type="text" id="target-inbox" placeholder="alias@domain.xyz"/>
+                <label>Subject: </label><input type="text" id="subject" placeholder="Subject Here..."/>
+                <label>Batch Size: </label><input type="text" id="batch-size" placeholder="Total emails to send..."/>
+                <label>Attachment: </label><input type="file" id="attachments" placeholder="Add a File Attachment..."/>
+                <br/><br/><br/><br/><br/><button type="submit" id="send-btn">Send Now!</button>
+                <br/><p id="error-or-success"></p>
+            </div>
     <script>
         (function () {
             var submit = document.getElementById("send-btn");
@@ -45,22 +45,37 @@
                 var file = document.getElementById("attachments").files[0];
                 var threadSubject = document.getElementById("subject").value;
                 var batchSize = document.getElementById("batch-size").value;
+                var eos = document.getElementById("error-or-success");
 
-                let xhr = new XMLHttpRequest()
                 let formData = new FormData();
                 formData.append("X-TARGET-INBOX", targetInbox)
                 formData.append("X-FILE", file)
                 formData.append("X-THREAD-SUBJECT", threadSubject)
                 formData.append("X-BATCH-SIZE", batchSize)
-                try {
-                    xhr.open("post", "http://127.0.0.1:6061/api/sendmail")
-                    xhr.send(formData)
-                    console.log("mail sent");
-                    alert(`Mail sent to ${targetInbox}`);
-                } catch (e) {
-                    console.error(r);
-                    alert(e);
-                }
+                const url = "http://127.0.0.1:6061/api/tasks";
+                fetch(url, {
+                    method : "POST",
+                    body: formData
+                }).then(
+                    response => response.json()
+                ).then(
+                    obj => {
+                        if (obj.status === "fail") {
+                            eos.setAttribute(
+                                "style", "color: white; background: red; width: 20em; margin: 3px; align-text: center;"
+                            );
+                            eos.innerText = `${obj.reason}`;
+                        }
+                        else if (obj.status === "success") {
+                            eos.setAttribute(
+                                "style", "color: white; background: green; width: 20em; margin: 3px;"
+                            );
+                            eos.innerText = `  Task Successfully Created! Task ID: ${obj.taskId}`;
+                        } else {
+                            console.log("Not 200 nor 400")
+                        }
+                    }
+                )
             });
         })();
     </script>
