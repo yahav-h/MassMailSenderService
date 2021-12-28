@@ -1,5 +1,5 @@
 import json
-from os.path import join, dirname, abspath
+from os.path import join, dirname, abspath, exists
 
 class _Singleton(type):
     _instances = {}
