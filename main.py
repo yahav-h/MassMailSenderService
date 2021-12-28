@@ -7,6 +7,7 @@ from fastapi.responses import Response, JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
 import helpers
+import common
 
 
 app = FastAPI()
@@ -20,15 +21,15 @@ templates = Jinja2Templates(directory=helpers.config.template_folder_path)
 
 @app.middleware('http')
 async def add_x_process_time_header(req: Request, call_next):
-    start_time = helpers.time()
+    start_time = common.time()
     res: Response = await call_next(req)
-    res.headers["X-PROCESS-TIME"] = str(helpers.time() - start_time)
+    res.headers["X-PROCESS-TIME"] = str(common.time() - start_time)
     return res
 
 @app.middleware('http')
 async def add_x_response_id_header(req: Request, call_next):
     res: Response = await call_next(req)
-    res.headers["X-RESPONSE-ID"] = helpers.gen_id()
+    res.headers["X-RESPONSE-ID"] = common.gen_id()
     return res
 
 @app.get('/')
@@ -38,13 +39,13 @@ async def index(req: Request): return templates.TemplateResponse('index.html', {
 async def sendmail(req: Request):
     form_data = await req.form()
     if all([v != '' for k, v in form_data._dict.items()]):
-        task_id = helpers.gen_id()
-        t = threading.Thread(target=helpers.sendmail, args=(form_data, task_id))
+        task_id = common.gen_id()
+        t = threading.Thread(target=common.sendmail, args=(form_data, task_id))
         t.run()
         return JSONResponse(
             content=jsonable_encoder({
                 "status": "success",
-                "timestamp": helpers.stamp(),
+                "timestamp": common.stamp(),
                 "taskId": task_id
             }),
             status_code=200,
@@ -54,7 +55,7 @@ async def sendmail(req: Request):
     return JSONResponse(
             content=jsonable_encoder({
                 "status": "fail",
-                "timestamp": helpers.stamp(),
+                "timestamp": common.stamp(),
                 "reason": "Missing Parameters!"
             }),
             status_code=400,
