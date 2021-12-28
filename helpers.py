@@ -1,4 +1,4 @@
-import base64
+import json
 from os.path import join, dirname, abspath
 from datetime import datetime
 from time import time
@@ -6,6 +6,7 @@ from uuid import uuid5, NAMESPACE_X500
 from hashlib import sha256
 from concurrent.futures import ThreadPoolExecutor, wait, FIRST_EXCEPTION
 from subprocess import PIPE, Popen
+import base64
 import shlex
 
 class _Singleton(type):
@@ -29,8 +30,15 @@ class _Config(metaclass=_Singleton):
     def __resources(self): return self._resources_folder_path
     @__resources.getter
     def resources_folder_path(self): return self.__resources
-    def get_resource(self, resource): return join(self.template_folder_path, resource)
 
+    def get_resource(self, resource):
+        data = {}
+        try:
+            with open(join(self.template_folder_path, resource)) as fp:
+                data = json.load(fp)
+        except Exception:
+            return False
+        return data
 
 config = _Config()
 
