@@ -1,4 +1,6 @@
 {
-  "aws-access-key": "",
-  "aws-secret-key": ""
+  "service": "",
+  "region": "",
+  "access-key": "",
+  "secret-key": ""
 }
