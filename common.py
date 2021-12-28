@@ -6,7 +6,6 @@ from concurrent.futures import ThreadPoolExecutor, wait, FIRST_EXCEPTION
 from os.path import join
 import base64
 import helpers
-import mail_sender
 
 def stamp(): return datetime.now().isoformat()
 def gen_id(): return sha256(uuid5(NAMESPACE_X500, time().hex()).bytes).hexdigest()
