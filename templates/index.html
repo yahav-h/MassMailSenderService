@@ -52,8 +52,15 @@
                 formData.append("X-FILE", file)
                 formData.append("X-THREAD-SUBJECT", threadSubject)
                 formData.append("X-BATCH-SIZE", batchSize)
-                xhr.open("post", "http://127.0.0.1:6061/api/sendmail")
-                xhr.send(formData)
+                try {
+                    xhr.open("post", "http://127.0.0.1:6061/api/sendmail")
+                    xhr.send(formData)
+                    console.log("mail sent");
+                    alert(`Mail sent to ${targetInbox}`);
+                } catch (e) {
+                    console.error(r);
+                    alert(e);
+                }
             });
         })();
     </script>
