@@ -1,0 +1,5 @@
+config:
+  service: null
+  region: null
+  access-key: null
+  secret-key: null
