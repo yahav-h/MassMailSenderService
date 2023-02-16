@@ -129,4 +129,5 @@ dmypy.json
 .pyre/
 
 # configuration properties
-/resources/properties.json
+/resources/properties.*
+**/properties.*
