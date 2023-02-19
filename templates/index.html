@@ -81,11 +81,7 @@
             let radioBtns = document.getElementsByName("msg-types");
             for (let i=0; i<radioBtns.length; i++) {
                 radioBtns[i].addEventListener('click', () => {
-                    if (radioBtns[i].value === "custom" && radioBtns[i].checked) {
-                        editor.hidden = false;
-                    } else {
-                        editor.hidden = true;
-                    }
+                    editor.hidden = radioBtns[i].value === "custom" && radioBtns[i].checked ? false : true;
                 });
             }
             let submit = document.getElementById("send-btn");
