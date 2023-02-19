@@ -83,6 +83,8 @@
                 radioBtns[i].addEventListener('click', () => {
                     if (radioBtns[i].value === "custom" && radioBtns[i].checked) {
                         editor.hidden = false;
+                    } else {
+                        editor.hidden = true;
                     }
                 });
             }
