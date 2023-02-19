@@ -1,5 +1,5 @@
-Reply-To: noreply@mms.automations-services.avanan.net
-From: MMS Automations Services <noreply@mms.automations-services.avanan.net>
+Reply-To: EML_Sender@avtestqa.com
+From: MMS Automations Services <EML_Sender@avtestqa.com>
 To: {{to}}
 Subject: {{subject}}
 Message-ID: {{message_id}}
@@ -11,8 +11,10 @@ Content-Type: text/plain; charset="US-ASCII"
 Content-Transfer-Encoding: 7bit
 Content-Disposition: inline
 
+{{context}}
+
 --19032019ABCDE
-Content-Type: application;
+Content-Type: application/octet-stream;
 Content-Transfer-Encoding: base64
 Content-Disposition: attachment; filename="{{filename}}"
 
