@@ -99,7 +99,7 @@ class SesMailSender(object, metaclass=_Singleton):
                     f"params({eml_file}) | returns({msg})"
                 )
             del(msg['From'])
-            msg['From'] = "EML_Sender@avtestqa.com"
+            msg['From'] = "noreply@mss.avanan.net"
             logger.info(f"{kwargs.get('request').client.host} | {stamp()} | send_mail::del['From'] | returns({msg})")
             for key in msg.keys().copy():
                 if 'X-CLOUD-SEC-AV' in key:
