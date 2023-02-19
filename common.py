@@ -1,56 +1,128 @@
-from datetime import datetime
-from time import time
-from uuid import uuid5, NAMESPACE_X500
-from hashlib import sha256
-from concurrent.futures import ThreadPoolExecutor, wait, FIRST_EXCEPTION
-from os.path import join
 import base64
 import helpers
+from os.path import join
+from concurrent.futures import ThreadPoolExecutor as Thread_pool, wait, FIRST_EXCEPTION
 
-def stamp(): return datetime.now().isoformat()
-def gen_id(): return sha256(uuid5(NAMESPACE_X500, time().hex()).bytes).hexdigest()
-
-def build_eml(to, subject, filename, message_id, base64str):
-    with open(join(helpers.config.template_folder_path, "template.eml"), 'r') as fout:
+def build_eml(to, subject, filename, message_id, context, base64str, **kwargs):
+    helpers.logger.info(
+        f"{kwargs.get('request').client.host} | {helpers.stamp()} | build_eml | " +
+        f"params({to}, {subject}, {filename}, {message_id}, {context}, {base64})"
+    )
+    tmp_file = join(helpers.config.template_folder_path, "template.eml")
+    helpers.logger.info(
+        f"{kwargs.get('request').client.host} | {helpers.stamp()} | build_eml::open | params({tmp_file}, r)"
+    )
+    with open(tmp_file, 'r') as fout:
         data = fout.read()
         data = data.replace('{{to}}', to)\
             .replace('{{subject}}', subject+'-'+message_id)\
             .replace('{{message_id}}', message_id)\
+            .replace('{{context}}', context)\
             .replace('{{filename}}', filename)\
             .replace('{{base64string}}', base64str)
-
+        helpers.logger.info(
+            f"{kwargs.get('request').client.host} | {helpers.stamp()} | send_mail::open::read | " +
+            f"params({fout}) | returns({data})"
+        )
         eml_path = f'{helpers.config.template_folder_path}/{message_id}.eml'
+        helpers.logger.info(
+            f"{kwargs.get('request').client.host} | {helpers.stamp()} | send_mail::open | params({eml_path}, w)"
+        )
         with open(eml_path, 'w') as fin:
             fin.write(data)
-            fin.close()
-        fout.close()
+            helpers.logger.info(
+                f"{kwargs.get('request').client.host} | {helpers.stamp()} | send_mail::open::write | params({data}) "
+            )
+    helpers.logger.info(
+        f"{kwargs.get('request').client.host} | {helpers.stamp()} | send_mail | returns({eml_path})"
+    )
     return eml_path
 
-def sendmail_proc(eml_path):
-    """ TODO : Implement SES  Here """
-    ...
-
-def sendmail(form_data, task_id):
-    x_batch_size = int(form_data._dict["X-BATCH-SIZE"])
-    x_target_inbox = form_data._dict["X-TARGET-INBOX"]
-    x_file = form_data._dict["X-FILE"]
-    x_thread_subject = form_data._dict["X-THREAD-SUBJECT"]
-    b64str = base64.b64encode(x_file.file.read()).decode()
-    eml_path = build_eml(
-        filename=x_file.filename, subject=x_thread_subject, message_id=task_id, to=x_target_inbox, base64str=b64str
+def thread_state_checker(batch_size, tmp_path, to, process, **kwargs):
+    helpers.logger.info(
+        f"{kwargs.get('request').client.host} | {helpers.stamp()} | thread_state_checker | " +
+        f"params({batch_size}, {tmp_path}, {to}, {process})"
     )
-    with ThreadPoolExecutor(max_workers=x_batch_size) as executor:
+    helpers.logger.info(
+        f"{kwargs.get('request').client.host} | {helpers.stamp()} | thread_state_checker::Thread_pool | " +
+        f"params({batch_size})"
+    )
+    with Thread_pool(max_workers=batch_size) as executor:
         fs = []
-        for i in range(0, x_batch_size):
-            fs.append(executor.submit(sendmail_proc, eml_path))
+        for i in range(0, batch_size):
+            fs.append(executor.submit(process, tmp_path, to, **kwargs))
+        helpers.logger.info(
+            f"{kwargs.get('request').client.host} | {helpers.stamp()} | thread_state_checker::Thread_pool | " +
+            f"fs={fs})"
+        )
         states = []
         for f in fs:
             states.append(wait(fs=[f], timeout=666, return_when=FIRST_EXCEPTION))
+        helpers.logger.info(
+            f"{kwargs.get('request').client.host} | {helpers.stamp()} | thread_state_checker::Thread_pool | " +
+            f"states={states})"
+        )
         if all([state.done for state in states]):
             futures = [s.done.pop() for s in states]
             if all([f._state == 'FINISHED' for f in futures]):
                 results = [f.result() for f in futures]
-                print(results)
-            print("Done sending emails")
+            helpers.logger.info(
+                f"{kwargs.get('request').client.host} | {helpers.stamp()} | thread_state_checker::Thread_pool | " +
+                f"results({results}) | status=Done sending emails)"
+            )
         else:
-            print("not Done")
+            helpers.logger.info(
+                f"{kwargs.get('request').client.host} | {helpers.stamp()} | thread_state_checker::Thread_pool | " +
+                f"results(None) | status=not Done)"
+            )
+
+def sendmail_proc(eml_path, to, **kwargs):
+    helpers.logger.info(
+        f"{kwargs.get('request').client.host} | {helpers.stamp()} | sendmail_proc | params({eml_path}, {to})"
+    )
+    res = helpers.ses.send_mail(path=eml_path, to=to, **kwargs)
+    helpers.logger.info(f"{kwargs.get('request').client.host} | {helpers.stamp()} | sendmail_proc | returns({res})")
+    helpers.file_remove(eml_path, **kwargs)
+    return res
+
+
+def handle_form_data(form_data):
+    x_context_type = form_data.dict["X-CONTEXT-TYPE"]
+    if "clean" in x_context_type:
+        x_context_type = "This is a clean email!"
+    elif "phishing" in x_context_type:
+        x_context_type = """This is a Phishing Email!\nhttp://operatf.xyz/redirect53dfhbhfhfhb"""
+    elif "suspicious" in x_context_type:
+        x_context_type = """This is a Suspicious Email!\nhttp://this-is-suspicious.com/login.php"""
+    elif "malicious" in x_context_type:
+        x_context_type = """This is a Malicious Email!\nhttp://www.xvira-malwareavrad.com"""
+    else:
+        x_context_type = """This is a Custom Email!\n%s""" % form_data.dict["X-RAW-DATA"]
+    x_batch_size = int(form_data.dict["X-BATCH-SIZE"])
+    x_target_inbox = form_data.dict["X-TARGET-INBOX"]
+    x_thread_subject = form_data.dict["X-THREAD-SUBJECT"]
+    x_file = form_data.dict["X-FILE"]
+    b64str = base64.b64encode(x_file.file.read()).decode() if x_file != "null" else ""
+    filename = x_file.filename if x_file != "null" else ""
+    return x_batch_size, x_target_inbox, x_context_type, x_thread_subject, b64str, filename
+
+def sendmail(form_data, task_id, **kwargs):
+    helpers.logger.info(
+        f"{kwargs.get('request').client.host} | {helpers.stamp()} | sendmail | params({form_data}, {task_id})"
+    )
+    x_batch_size, x_target_inbox, x_context_type, x_thread_subject, b64str, filename = handle_form_data(form_data)
+    helpers.logger.info(
+        f"{kwargs.get('request').client.host} | {helpers.stamp()} | sendmail_proc::build_eml | " +
+        f"params({filename}, {x_thread_subject}, {task_id}, {x_target_inbox}, {x_context_type}, {b64str})"
+    )
+    eml_path = build_eml(
+        filename=filename, subject=x_thread_subject, message_id=task_id,
+        context=x_context_type, to=x_target_inbox, base64str=b64str, **kwargs
+    )
+    helpers.logger.info(
+        f"{kwargs.get('request').client.host} | {helpers.stamp()} | send_mail::thread_state_executor | " +
+        f"params({x_batch_size}, {eml_path}, {x_target_inbox}, {sendmail_proc})"
+    )
+    thread_state_checker(
+        batch_size=x_batch_size, tmp_path=eml_path, to=x_target_inbox, process=sendmail_proc, **kwargs
+    )
