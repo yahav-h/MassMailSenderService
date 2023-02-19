@@ -107,11 +107,12 @@
                 formData.append("X-THREAD-SUBJECT", threadSubject);
                 batchSize = batchSize > 0 ? batchSize : 1;
                 formData.append("X-BATCH-SIZE", batchSize);
+                formData.append("X-CONTEXT-TYPE", contextType);
                 if (contextType === "custom" && editor.hidden === false) {
                     rawData = editor.value;
                 }
                 formData.append("X-RAW-DATA", rawData);
-                formData.append("X-CONTEXT-TYPE", contextType);
+
                 fetch(url, {
                     method : "POST",
                     body: formData
