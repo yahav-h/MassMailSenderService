@@ -1,58 +1,117 @@
 <!DOCTYPE html>
 <html lang="en">
     <head>
-        <meta charset="UTF-8">
-        <title>Mass Mail Sender</title>
         <style>
             body {
                 background: azure;
             }
-            label {
+            label.field {
                 display: inline-block;
                 float: left;
                 clear: left;
                 width: 10em;
                 text-align: left;
             }
-            input {
+            input.field {
                 display: inline-block;
                 width: 14em;
                 float: left;
             }
             button {
-                margin-left: 12em;
-                width: 14.5em;
-                height: 3em;
+                margin-left: 5em;
+                width: 90%;
+                height: 4em;
+            }
+            textarea {
+                margin-left: 2.5em;
+                width: 95%;
+                height: 5em;
             }
         </style>
+        <meta charset="UTF-8">
+        <title>Mass Mail Sender</title>
     </head>
     <body>
-            <h2>Mass Email Sender Service</h2>
+    <center><legend><b>Mass Email Sender Service</b></legend></center>
+        <fieldset>
+            <legend><b>Message Info:</b></legend>
+            <label class="field" for=target-inbox>Email: </label>
+            <input type="text" class="field" id="target-inbox" placeholder="target inbox here..."><br/>
+            <label class="field" for=subject>Subject: </label>
+            <input type="text" class="field" id="subject" placeholder="subject here..."><br/>
+            <label class="field" for=batch-size>Batch Size: </label>
+            <input type="number" min="1" class="field" id="batch-size" placeholder="batch size..."><br/>
+            <label class="field" for=attachments>Attachments: </label>
+            <input type="file" class="field" id="attachments" placeholder="attach a file..."><br/><br/>
+        </fieldset>
+        <br/>
+        <fieldset>
+            <legend><b>Message Types:</b></legend>
             <div>
-                <label>Email Address: </label><input type="text" id="target-inbox" placeholder="alias@domain.xyz"/>
-                <label>Subject: </label><input type="text" id="subject" placeholder="Subject Here..."/>
-                <label>Batch Size: </label><input type="text" id="batch-size" placeholder="Total emails to send..."/>
-                <label>Attachment: </label><input type="file" id="attachments" placeholder="Add a File Attachment..."/>
-                <br/><br/><br/><br/><br/><button type="submit" id="send-btn">Send Now!</button>
-                <br/><p id="error-or-success"></p>
+              <input type="radio" id="clean" name="msg-types" value="clean" checked>
+              <label for="clean">Clean</label>
             </div>
+            <div>
+              <input type="radio" id="phishing" name="msg-types" value="phishing">
+              <label for="phishing">Phishing</label>
+            </div>
+            <div>
+              <input type="radio" id="suspicious" name="msg-types" value="suspicious">
+              <label for="suspicious">Suspicious</label>
+            </div>
+            <div>
+                <input type="radio" id="malicious" name="msg-types" value="malicious">
+                <label for="malicious">Malicious</label>
+            </div>
+            <div>
+                <input type="radio" id="custom" name="msg-types" value="custom">
+                <label for="custom">Custom</label>
+            </div>
+        </fieldset>
+        <textarea id="editor" hidden></textarea>
+        <br/>
+        <button type="submit" id="send-btn" >Send</button>
+        <br/><p id="error-or-success"></p>
     <script>
         (function () {
-            var submit = document.getElementById("send-btn");
-
+            const url = `${window.location.href}api/tasks`
+            let contextType = undefined;
+            let rawData = undefined;
+            let editor = document.getElementById("editor");
+            let radioBtns = document.getElementsByName("msg-types");
+            for (let i=0; i<radioBtns.length; i++) {
+                radioBtns[i].addEventListener('click', () => {
+                    if (radioBtns[i].value === "custom" && radioBtns[i].checked) {
+                        editor.hidden = false;
+                    }
+                });
+            }
+            let submit = document.getElementById("send-btn");
             submit.addEventListener('click', () => {
-                var targetInbox = document.getElementById("target-inbox").value;
-                var file = document.getElementById("attachments").files[0];
-                var threadSubject = document.getElementById("subject").value;
-                var batchSize = document.getElementById("batch-size").value;
-                var eos = document.getElementById("error-or-success");
-
+                let targetInbox = document.getElementById("target-inbox").value;
+                let file = document.getElementById("attachments").files[0];
+                let threadSubject = document.getElementById("subject").value;
+                let batchSize = document.getElementById("batch-size").value;
+                for (let i=0; i<radioBtns.length; i++) {
+                    if (radioBtns[i].checked) {
+                        contextType = radioBtns[i].getAttribute("value");
+                    }
+                }
+                let eos = document.getElementById("error-or-success");
                 let formData = new FormData();
-                formData.append("X-TARGET-INBOX", targetInbox)
-                formData.append("X-FILE", file)
-                formData.append("X-THREAD-SUBJECT", threadSubject)
-                formData.append("X-BATCH-SIZE", batchSize)
-                const url = "http://127.0.0.1:6061/api/tasks";
+                targetInbox = targetInbox === undefined ? null : targetInbox;
+                formData.append("X-TARGET-INBOX", targetInbox);
+                file = file === undefined ? null : file;
+                formData.append("X-FILE", file);
+                threadSubject = threadSubject === undefined ? null : threadSubject;
+                formData.append("X-THREAD-SUBJECT", threadSubject);
+                batchSize = batchSize > 0 ? batchSize : 1;
+                formData.append("X-BATCH-SIZE", batchSize);
+                if (contextType === "custom" && editor.hidden === false) {
+                    rawData = editor.value;
+                }
+                formData.append("X-RAW-DATA", rawData);
+                formData.append("X-CONTEXT-TYPE", contextType);
                 fetch(url, {
                     method : "POST",
                     body: formData
