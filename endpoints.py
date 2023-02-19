@@ -79,16 +79,3 @@ async def start_task(req: Request, bgt: BackgroundTasks):
             media_type="application/json",
             headers={"content-type": "application/json"}
         )
-
-@app.get('/api/tasks')
-async def get_task(req: Request):
-    return JSONResponse(
-        content=jsonable_encoder({
-            "status": "Not Implemented Yet!",
-            "timestamp": helpers.stamp(),
-            "requester": req.client.host
-        }),
-        status_code=200,
-        media_type="application/json",
-        headers={"content-type": "application/json"}
-    )
