@@ -38,8 +38,6 @@ async def add_x_response_id_header(req: Request, call_next):
 async def test_service():
     assert helpers.exists(helpers.join(helpers.config.template_folder_path, 'index.html')), \
         "Error! `index.html` does not exists!"
-    assert helpers.exists(helpers.join(helpers.config.template_folder_path, 'template.eml')), \
-        "Error! `template.eml` does not exists!"
     assert helpers.exists(helpers.join(helpers.config.resources_folder_path, 'properties.yml')), \
         "Error! `properties.yml` does not exists!"
     props = helpers.config.get_resource('properties.yml')
