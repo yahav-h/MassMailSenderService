@@ -1,5 +1,7 @@
 import boto3
-import email
+from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
+from email.mime.application import MIMEApplication
 import logging
 from os import remove
 from time import time
@@ -62,6 +64,10 @@ class _Config(metaclass=_Singleton):
     @__resources.getter
     def resources_folder_path(self): return self.__resources
 
+    def read_template(self):
+        with open(join(self.template_folder_path, "template.eml"), "r") as eml:
+            return eml.read()
+
     def get_resource(self, resource):
         logger.info(f"{stamp()} | get_resource | params({resource})")
         try:
@@ -76,6 +82,7 @@ class _Config(metaclass=_Singleton):
 
 config = _Config()
 
+
 class SesMailSender(object, metaclass=_Singleton):
     ses_client = None
 
@@ -88,29 +95,32 @@ class SesMailSender(object, metaclass=_Singleton):
             aws_secret_access_key=props.get("config").get("secret-key")
         )
 
-    def send_mail(self, path, to, **kwargs):
-        logger.info(f"{kwargs.get('request').client.host} | {stamp()} | send_mail | params({path}, {to})")
+    def send_mail(
+            self, recipient=None, subject=None, body=None,
+            message_id=None, b64_attachment_data=None, filename=None, **kwargs
+    ):
+        logger.info(
+            f"{kwargs.get('request').client.host} | {stamp()} | send_mail | " +
+            f"params({recipient}, {subject}, {body}, {message_id}, {b64_attachment_data}, {filename})"
+        )
         try:
-            logger.info(f"{kwargs.get('request').client.host} | {stamp()} | send_mail::open | params({path}, 'r')")
-            with open(path, 'r') as eml_file:
-                msg = email.message_from_file(eml_file)
-                logger.info(
-                    f"{kwargs.get('request').client.host} | {stamp()} | send_mail::open::email.message_from_file | " +
-                    f"params({eml_file}) | returns({msg})"
-                )
-            del(msg['From'])
-            msg['From'] = "EML_Sender@avtestqa.com"
-            logger.info(f"{kwargs.get('request').client.host} | {stamp()} | send_mail::del['From'] | returns({msg})")
-            for key in msg.keys().copy():
-                if 'X-CLOUD-SEC-AV' in key:
-                    del(msg[key])
-                    logger.info(
-                        f"{kwargs.get('request').client.host} | {stamp()} | send_mail::del['{key}'] | returns({msg})"
-                    )
+            msg = MIMEMultipart()
+            msg['From'] = 'EML_Sender@avtestqa.com'
+            msg['To'] = recipient
+            msg['Subject'] = f"{subject}-{message_id}"
+            msg['Message-ID'] = message_id
+            msg.attach(MIMEText(body, 'plain'))
+            if filename and b64_attachment_data:
+                attachment = MIMEApplication(_data=b64_attachment_data)
+                attachment.add_header('Content-Disposition', 'attachment', filename=filename)
+                msg.attach(attachment)
+            logger.info(
+                f"{kwargs.get('request').client.host} | {stamp()} | send_mail | message({msg})"
+            )
             params = {
                 "RawMessage": {'Data': msg.as_string()},
-                "Source": "Distributor@avtestqa.com",
-                "Destinations": [to]
+                "Source": "EML_Sender@avtestqa.com",
+                "Destinations": recipient if isinstance(recipient, list) else [recipient]
             }
             logger.info(
                 f"{kwargs.get('request').client.host} | {stamp()} | send_mail::ses_client.send_raw_email | " +

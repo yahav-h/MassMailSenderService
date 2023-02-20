@@ -38,10 +38,25 @@ def build_eml(to, subject, filename, message_id, context, base64str, **kwargs):
     )
     return eml_path
 
-def thread_state_checker(batch_size, tmp_path, to, process, **kwargs):
+
+def sendmail_proc(recipient, subject, body, message_id, b64_attachment_data, filename, **kwargs):
+    helpers.logger.info(
+        f"{kwargs.get('request').client.host} | {helpers.stamp()} | sendmail_proc | " +
+        f"params({recipient}, {subject}, {body}, {message_id}, {b64_attachment_data}, {filename})"
+    )
+    res = helpers.ses.send_mail(recipient, subject, body, message_id, b64_attachment_data, filename, **kwargs)
+    helpers.logger.info(f"{kwargs.get('request').client.host} | {helpers.stamp()} | sendmail_proc | returns({res})")
+    # helpers.file_remove(eml_path, **kwargs)
+    return res
+
+
+def thread_state_checker(
+        batch_size=None, recipient=None, subject=None, body=None,
+        message_id=None, b64_attachment_data=None, filename=None, **kwargs
+):
     helpers.logger.info(
         f"{kwargs.get('request').client.host} | {helpers.stamp()} | thread_state_checker | " +
-        f"params({batch_size}, {tmp_path}, {to}, {process})"
+        f"params({batch_size}, {recipient}, {subject}, {body} , {b64_attachment_data}, {filename})"
     )
     helpers.logger.info(
         f"{kwargs.get('request').client.host} | {helpers.stamp()} | thread_state_checker::Thread_pool | " +
@@ -50,7 +65,11 @@ def thread_state_checker(batch_size, tmp_path, to, process, **kwargs):
     with Thread_pool(max_workers=batch_size) as executor:
         fs = []
         for i in range(0, batch_size):
-            fs.append(executor.submit(process, tmp_path, to, **kwargs))
+            fs.append(
+                executor.submit(
+                    sendmail_proc, recipient, subject, body, message_id, b64_attachment_data, filename, **kwargs
+                )
+            )
         helpers.logger.info(
             f"{kwargs.get('request').client.host} | {helpers.stamp()} | thread_state_checker::Thread_pool | " +
             f"fs={fs})"
@@ -75,15 +94,6 @@ def thread_state_checker(batch_size, tmp_path, to, process, **kwargs):
                 f"{kwargs.get('request').client.host} | {helpers.stamp()} | thread_state_checker::Thread_pool | " +
                 f"results(None) | status=not Done)"
             )
-
-def sendmail_proc(eml_path, to, **kwargs):
-    helpers.logger.info(
-        f"{kwargs.get('request').client.host} | {helpers.stamp()} | sendmail_proc | params({eml_path}, {to})"
-    )
-    res = helpers.ses.send_mail(path=eml_path, to=to, **kwargs)
-    helpers.logger.info(f"{kwargs.get('request').client.host} | {helpers.stamp()} | sendmail_proc | returns({res})")
-    helpers.file_remove(eml_path, **kwargs)
-    return res
 
 
 def handle_form_data(form_data):
@@ -112,17 +122,10 @@ def sendmail(form_data, task_id, **kwargs):
     )
     x_batch_size, x_target_inbox, x_context_type, x_thread_subject, b64str, filename = handle_form_data(form_data)
     helpers.logger.info(
-        f"{kwargs.get('request').client.host} | {helpers.stamp()} | sendmail_proc::build_eml | " +
+        f"{kwargs.get('request').client.host} | {helpers.stamp()} | sendmail_proc::thread_state_executor | " +
         f"params({filename}, {x_thread_subject}, {task_id}, {x_target_inbox}, {x_context_type}, {b64str})"
     )
-    eml_path = build_eml(
-        filename=filename, subject=x_thread_subject, message_id=task_id,
-        context=x_context_type, to=x_target_inbox, base64str=b64str, **kwargs
-    )
-    helpers.logger.info(
-        f"{kwargs.get('request').client.host} | {helpers.stamp()} | send_mail::thread_state_executor | " +
-        f"params({x_batch_size}, {eml_path}, {x_target_inbox}, {sendmail_proc})"
-    )
     thread_state_checker(
-        batch_size=x_batch_size, tmp_path=eml_path, to=x_target_inbox, process=sendmail_proc, **kwargs
+        batch_size=x_batch_size, recipient=x_target_inbox, body=x_context_type, message_id=task_id,
+        subject=x_thread_subject, b64_attachment_data=b64str, filename=filename, **kwargs
     )
