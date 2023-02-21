@@ -54,7 +54,7 @@ async def index(req: Request): return templates.TemplateResponse('index.html', {
 @app.post('/api/tasks')
 async def start_task(req: Request, bgt: BackgroundTasks):
     form_data = await req.form()
-    if all([v != '' for k, v in form_data.dict.items()]):
+    if all([v != '' for k, v in form_data._dict.items()]):
         task_id = helpers.gen_id()
         bgt.add_task(common.sendmail, form_data, task_id, request=req)
         return JSONResponse(
