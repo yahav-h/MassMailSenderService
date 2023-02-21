@@ -14,7 +14,7 @@
             }
             input.field {
                 display: inline-block;
-                width: 14em;
+                width: 25em;
                 float: left;
             }
             button {
@@ -26,6 +26,26 @@
                 margin-left: 2.5em;
                 width: 95%;
                 height: 5em;
+            }
+            .tooltip {
+              position: relative;
+              display: inline-block;
+              border-bottom: 1px dotted black;
+            }
+            .tooltip .tooltiptext {
+              visibility: hidden;
+              width: 120px;
+              background-color: black;
+              color: #fff;
+              text-align: center;
+              border-radius: 6px;
+              padding: 5px 0;
+              /* Position the tooltip */
+              position: absolute;
+              z-index: 1;
+            }
+            .tooltip:hover .tooltiptext {
+              visibility: visible;
             }
         </style>
         <meta charset="UTF-8">
@@ -47,28 +67,37 @@
         <br/>
         <fieldset>
             <legend><b>Message Types:</b></legend>
-            <div>
-              <input type="radio" id="clean" name="msg-types" value="clean" checked>
-              <label for="clean">Clean</label>
+            <div class="tooltip">
+                <input type="radio" id="clean" name="msg-types" value="clean" checked>
+                <label for="clean">Clean</label>
+                <span class="tooltiptext">Uses clean body: This is a clean email!</span>
             </div>
-            <div>
-              <input type="radio" id="phishing" name="msg-types" value="phishing">
-              <label for="phishing">Phishing</label>
+            <div class="tooltip">
+                <input type="radio" id="phishing" name="msg-types" value="phishing">
+                <label for="phishing">Phishing</label>
+                <span class="tooltiptext">Uses the 'operatf' link</span>
             </div>
-            <div>
-              <input type="radio" id="suspicious" name="msg-types" value="suspicious">
-              <label for="suspicious">Suspicious</label>
+            <div class="tooltip">
+                <input type="radio" id="suspicious" name="msg-types" value="suspicious">
+                <label for="suspicious">Suspicious</label>
+                <span class="tooltiptext">Uses the 'this-is-suspicious' link</span>
             </div>
-            <div>
+            <div class="tooltip">
                 <input type="radio" id="malicious" name="msg-types" value="malicious">
                 <label for="malicious">Malicious</label>
+                <span class="tooltiptext">Uses the 'xvira' link</span>
             </div>
-            <div>
+            <div class="tooltip">
                 <input type="radio" id="custom" name="msg-types" value="custom">
                 <label for="custom">Custom</label>
+                <span class="tooltiptext">Allows a custom message</span>
             </div>
         </fieldset>
-        <textarea id="editor" hidden></textarea>
+        <br/>
+        <fieldset id="cont-editor" hidden>
+            <legend id="legend-editor" hidden><b>Custom Message Body</b></legend>
+            <textarea id="editor" hidden></textarea>
+        </fieldset>
         <br/>
         <button type="submit" id="send-btn" >Send</button>
         <br/><p id="error-or-success"></p>
@@ -77,11 +106,21 @@
             const url = `${window.location.href}api/tasks`
             let contextType = undefined;
             let rawData = undefined;
+            let contEditor = document.getElementById("cont-editor");
+            let legendEditor = document.getElementById("legend-editor");
             let editor = document.getElementById("editor");
             let radioBtns = document.getElementsByName("msg-types");
             for (let i=0; i<radioBtns.length; i++) {
                 radioBtns[i].addEventListener('click', () => {
-                    editor.hidden = radioBtns[i].value === "custom" && radioBtns[i].checked ? false : true;
+                    if (radioBtns[i].value === "custom" && radioBtns[i].checked) {
+                        contEditor.hidden = false;
+                        legendEditor.hidden = false;
+                        editor.hidden = false;
+                    } else {
+                        contEditor.hidden = true;
+                        legendEditor.hidden = true;
+                        editor.hidden = true;
+                    }
                 });
             }
             let submit = document.getElementById("send-btn");
