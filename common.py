@@ -97,7 +97,7 @@ def thread_state_checker(
 
 
 def handle_form_data(form_data):
-    x_context_type = form_data.dict["X-CONTEXT-TYPE"]
+    x_context_type = form_data._dict["X-CONTEXT-TYPE"]
     if "clean" in x_context_type:
         x_context_type = "This is a clean email!"
     elif "phishing" in x_context_type:
@@ -107,11 +107,11 @@ def handle_form_data(form_data):
     elif "malicious" in x_context_type:
         x_context_type = """This is a Malicious Email!\nhttp://www.xvira-malwareavrad.com"""
     else:
-        x_context_type = """This is a Custom Email!\n%s""" % form_data.dict["X-RAW-DATA"]
-    x_batch_size = int(form_data.dict["X-BATCH-SIZE"])
-    x_target_inbox = form_data.dict["X-TARGET-INBOX"]
-    x_thread_subject = form_data.dict["X-THREAD-SUBJECT"]
-    x_file = form_data.dict["X-FILE"]
+        x_context_type = """This is a Custom Email!\n%s""" % form_data._dict["X-RAW-DATA"]
+    x_batch_size = int(form_data._dict["X-BATCH-SIZE"])
+    x_target_inbox = form_data._dict["X-TARGET-INBOX"]
+    x_thread_subject = form_data._dict["X-THREAD-SUBJECT"]
+    x_file = form_data._dict["X-FILE"]
     b64str = base64.b64encode(x_file.file.read()).decode() if x_file != "null" else ""
     filename = x_file.filename if x_file != "null" else ""
     return x_batch_size, x_target_inbox, x_context_type, x_thread_subject, b64str, filename
