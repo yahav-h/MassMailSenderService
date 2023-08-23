@@ -3,6 +3,10 @@ import helpers
 from os.path import join
 from concurrent.futures import ThreadPoolExecutor as Thread_pool, wait, FIRST_EXCEPTION
 
+
+MAX_TIMEOUT = 120
+MAX_WORKERS = 10
+
 def build_eml(to, subject, filename, message_id, context, base64str, **kwargs):
     helpers.logger.info(
         f"{kwargs.get('request').client.host} | {helpers.stamp()} | build_eml | " +
@@ -62,7 +66,7 @@ def thread_state_checker(
         f"{kwargs.get('request').client.host} | {helpers.stamp()} | thread_state_checker::Thread_pool | " +
         f"params({batch_size})"
     )
-    with Thread_pool(max_workers=batch_size) as executor:
+    with Thread_pool(max_workers=MAX_WORKERS) as executor:
         fs = []
         for i in range(0, batch_size):
             fs.append(
@@ -76,7 +80,7 @@ def thread_state_checker(
         )
         states = []
         for f in fs:
-            states.append(wait(fs=[f], timeout=666, return_when=FIRST_EXCEPTION))
+            states.append(wait(fs=[f], timeout=MAX_TIMEOUT, return_when=FIRST_EXCEPTION))
         helpers.logger.info(
             f"{kwargs.get('request').client.host} | {helpers.stamp()} | thread_state_checker::Thread_pool | " +
             f"states={states})"
